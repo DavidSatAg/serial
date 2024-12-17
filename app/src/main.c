@@ -5,7 +5,7 @@
 
 #define MAX_DADOS 7        // Tamanho máximo do campo de dados
 #define QUEUE_SIZE 10      // Número máximo de pacotes na fila
-#define MSG_SIZE            /// Tamanho máximo do buffer que o callback do input utiliza
+#define MSG_SIZE           // Tamanho máximo do buffer que o callback do input utiliza
 #define STACK_SIZE 1024
 #define PRIORITY 5 
 
