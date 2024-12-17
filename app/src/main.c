@@ -12,7 +12,7 @@
 #define UART_DEVICE_NODE DT_CHOSEN(zephyr_shell_uart)
 
 typedef struct {
-    uint8_t u;                  // Preâmbulo
+    uint8_t u;                 // Preâmbulo
     uint8_t sync;              // SYNC (1 byte)
     uint8_t stx;               // STX (1 byte)
     uint8_t id_n;              // ID e N combinados (1 byte)
