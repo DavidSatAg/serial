@@ -1,3 +1,7 @@
+<<<<<<< Updated upstream
+=======
+#include <stdint.h>
+>>>>>>> Stashed changes
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/uart.h>
@@ -5,11 +9,17 @@
 
 #define MAX_DADOS 7        // Tamanho máximo do campo de dados
 #define QUEUE_SIZE 10      // Número máximo de pacotes na fila
-#define MSG_SIZE           // Tamanho máximo do buffer que o callback do input utiliza
+#define MSG_SIZE 7     // Tamanho máximo do buffer que o callback do input utiliza
 #define STACK_SIZE 1024
 #define PRIORITY 5 
 
 #define UART_DEVICE_NODE DT_CHOSEN(zephyr_shell_uart)
+
+#define GPIOB_NODE DT_NODELABEL(gpiob)
+#define TX_PIN 3  // Pino de saída
+#define RX_PIN 2  // Pino de entrada
+
+const struct device *gpio_dev;
 
 typedef struct {
     uint8_t u;                 // Preâmbulo
@@ -26,6 +36,23 @@ static const struct device *const uart_dev = DEVICE_DT_GET(UART_DEVICE_NODE);
 
 static char rx_buf[MSG_SIZE];
 static int rx_buf_pos;
+
+int ler_canal_filtrado(const struct device *gpio_dev, int rx_pin) {
+    int contador_1 = 0;
+    int contador_0 = 0;
+
+    for (int i = 0; i < 4; i++) {
+        int estado = gpio_pin_get(gpio_dev, rx_pin);
+        if (estado == 1) {
+            contador_1++;
+        } else {
+            contador_0++;
+        }
+        k_sleep(K_USEC(2500));
+    }
+
+    return (contador_1 > contador_0) ? 1 : 0;
+}
 
 void encapsular_pacote(Pacote *pacote, const char *dados, uint8_t id) {
     uint8_t tamanho_dados = strlen(dados) > MAX_DADOS ? MAX_DADOS : strlen(dados);
@@ -104,6 +131,13 @@ void transmitter_thread(void) {
 
 void main(void)
 {
+    gpio_dev = DEVICE_DT_GET(GPIOB_NODE);
+
+    if (!device_is_ready(gpio_dev)) {
+        printk("Erro: GPIOB não está pronto!\n");
+        return;
+    }
+
     if (!device_is_ready(uart_dev)) {
         printk("UART device not ready\n");
         return;
@@ -120,3 +154,4 @@ void main(void)
 }
 
 K_THREAD_DEFINE(transmitter_tid, STACK_SIZE, transmitter_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
+#define MAX_DADOS 7
