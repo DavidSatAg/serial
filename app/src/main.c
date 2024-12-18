@@ -1,7 +1,4 @@
-<<<<<<< Updated upstream
-=======
 #include <stdint.h>
->>>>>>> Stashed changes
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/uart.h>
@@ -37,6 +34,9 @@ static const struct device *const uart_dev = DEVICE_DT_GET(UART_DEVICE_NODE);
 static char rx_buf[MSG_SIZE];
 static int rx_buf_pos;
 
+struct k_mutex canal_mutex;
+struct k_condvar condvar;
+
 int ler_canal_filtrado(const struct device *gpio_dev, int rx_pin) {
     int contador_1 = 0;
     int contador_0 = 0;
@@ -52,6 +52,49 @@ int ler_canal_filtrado(const struct device *gpio_dev, int rx_pin) {
     }
 
     return (contador_1 > contador_0) ? 1 : 0;
+}
+
+void csma_thread(void *arg1, void *arg2, void *arg3) {
+    if (!gpio_dev) {
+        printk("Erro ao inicializar GPIO_DEV\n");
+        return;
+    }
+
+    /* Configura o pino RX como entrada */
+    gpio_pin_configure(gpio_dev, RX_PIN, GPIO_INPUT);
+
+    int max = 20;
+    int incremento = 50;
+    int tempo_aleatorio;
+
+    while (1) {
+        k_mutex_lock(&canal_mutex, K_FOREVER);
+
+        /* Verifica 32 bits e converte para 8 bits */
+        int canal_ocupado = 0; // Indica se algum bit 1 foi encontrado
+        for (int i = 0; i < 8; i++) {
+            int bit = ler_canal_filtrado(gpio_dev, RX_PIN);
+            if (bit == 1) {
+                canal_ocupado = 1;
+            }
+        }
+
+        if (canal_ocupado) {
+            /* Se o canal estiver ocupado, espera um tempo aleatório crescente */
+            tempo_aleatorio = rand() % max;
+            max += incremento;
+            printk("Canal ocupado, aguardando %d ms antes de verificar novamente...\n", tempo_aleatorio);
+            k_mutex_unlock(&canal_mutex);
+            k_sleep(K_MSEC(tempo_aleatorio));
+        } else {
+            /* Se o canal estiver livre, sinaliza e reinicia o tempo aleatório */
+            printk("Canal livre, notificando transmissora.\n");
+            max = 20;
+            k_condvar_signal(&condvar);
+            k_mutex_unlock(&canal_mutex);
+            k_sleep(K_MSEC(10));
+        }
+    }
 }
 
 void encapsular_pacote(Pacote *pacote, const char *dados, uint8_t id) {
@@ -154,4 +197,3 @@ void main(void)
 }
 
 K_THREAD_DEFINE(transmitter_tid, STACK_SIZE, transmitter_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
-#define MAX_DADOS 7
