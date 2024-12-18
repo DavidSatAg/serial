@@ -75,7 +75,7 @@ void serial_cb(const struct device *dev, void *user_data)
     }
 }
 
-void consumer_thread(void) {
+void transmitter_thread(void) {
     Pacote pacote_consumido; // Variável para armazenar o pacote retirado da fila
 
     while (1) {
@@ -119,4 +119,4 @@ void main(void)
     }
 }
 
-K_THREAD_DEFINE(consumer_tid, STACK_SIZE, consumer_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
+K_THREAD_DEFINE(transmitter_tid, STACK_SIZE, transmitter_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
